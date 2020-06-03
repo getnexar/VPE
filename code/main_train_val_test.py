@@ -24,7 +24,7 @@ from augmentations import *
 parser = ArgumentParser(description='Variational Prototyping Encoder (VPE)')
 parser.add_argument('--seed',       type=int,   default=42,             help='Random seed')
 parser.add_argument('--arch',       type=str,   default='vaeIdsiaStn',  help='network type: vaeIdsia, vaeIdsiaStn')
-parser.add_argument('--dataset',    type=str,   default='belga2flickr', help='dataset to use [gtsrb, belga2flickr, belga2toplogo]') # for gtsrb2TT100K scenario, use main_train_test.py
+parser.add_argument('--dataset',    type=str,   default='gtsrb2TT100K', help='dataset to use [gtsrb, belga2flickr, belga2toplogo]') # for gtsrb2TT100K scenario, use main_train_test.py
 parser.add_argument('--exp',        type=str,   default='exp_list',     help='training scenario')
 parser.add_argument('--resume',     type=str,   default=None,           help='Resume training from previously saved model')
 
@@ -32,8 +32,8 @@ parser.add_argument('--epochs',     type=int,   default=1000,           help='Tr
 parser.add_argument('--lr',         type=float, default=1e-4,           help='Learning rate')
 parser.add_argument('--batch_size', type=int,   default=128,            help='Batch size')
 
-parser.add_argument('--img_cols',   type=int,   default=64,             help='resized image width')
-parser.add_argument('--img_rows',   type=int,   default=64,             help='resized image height')
+parser.add_argument('--img_cols',   type=int,   default=48,             help='resized image width')
+parser.add_argument('--img_rows',   type=int,   default=48,             help='resized image height')
 parser.add_argument('--workers',    type=int,   default=4,              help='Data loader workers')
 
 args = parser.parse_args()
@@ -77,7 +77,13 @@ f_iou.close()
 
 # set up GPU
 # we could do os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+USE_CUDA = True
+try:
+    torch.cuda.current_device()
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+except:
+    USE_CUDA = False
+
 
 
 # Data
@@ -95,7 +101,10 @@ valloader = DataLoader(val_loader, batch_size=args.batch_size, num_workers=args.
 
 # define model or load model
 net = get_model(args.arch, n_classes=None)
-net.cuda()
+
+
+if USE_CUDA:
+  net.cuda()
 
 if args.resume is not None:
   pre_params = torch.load(args.resume)
@@ -131,7 +140,8 @@ def train(e):
 
     optimizer.zero_grad()
     target = torch.squeeze(target)
-    input, template = input.cuda(async=True), template.cuda(async=True)
+    if USE_CUDA:
+      input, template = input.cuda(async=True), template.cuda(async=True)
 
     recon, mu, logvar, input_stn = net(input)
     loss = loss_function(recon, template, mu, logvar) # reconstruction loss
@@ -164,7 +174,7 @@ def train(e):
     
     torchvision.utils.save_image(class_template, '{}/templates.jpg'.format(out_folder), nrow=8, padding=2)
     torchvision.utils.save_image(class_recon, '{}/templates_recon.jpg'.format(out_folder), nrow=8, padding=2)
-  
+
 def score_NN(pred, class_feature, label, n_classes):
 
   sample_correct = torch.zeros(n_classes)
@@ -364,7 +374,8 @@ def validation(e, best_acc):
   # get template latent z
   class_target = torch.LongTensor(list(range(n_classes)))
   class_template = val_loader.load_template(class_target)
-  class_template = class_template.cuda(async=True)
+  if USE_CUDA:
+    class_template = class_template.cuda(async=True)
   with torch.no_grad():
     class_recon, class_mu, class_logvar, _ = net(class_template)
   
@@ -372,7 +383,8 @@ def validation(e, best_acc):
   for i, (input, target, template) in enumerate(valloader):
 
     target = torch.squeeze(target)
-    input, template = input.cuda(async=True), template.cuda(async=True)
+    if USE_CUDA:
+      input, template = input.cuda(async=True), template.cuda(async=True)
     with torch.no_grad():
       recon, mu, logvar, input_stn = net(input)
     

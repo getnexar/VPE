@@ -20,6 +20,14 @@ from loader import get_loader, get_data_path
 from models import get_model
 from augmentations import *
 
+
+USE_CUDA = True
+try:
+    torch.cuda.current_device()
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+except:
+    USE_CUDA = False
+
 # Setup
 parser = ArgumentParser(description='Variational Prototyping Encoder (VPE)')
 parser.add_argument('--seed',       type=int,   default=42,             help='Random seed')
@@ -77,7 +85,7 @@ f_iou.close()
 
 # set up GPU
 # we could do os.environ["CUDA_VISIBLE_DEVICES"] = "0, 1, 2"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 # Data
 data_loader = get_loader(args.dataset)
@@ -91,7 +99,8 @@ testloader = DataLoader(te_loader, batch_size=args.batch_size, num_workers=args.
 
 # define model or load model
 net = get_model(args.arch, n_classes=None)
-net.cuda()
+if USE_CUDA:
+  net.cuda()
 
 if args.resume is not None:
   pre_params = torch.load(args.resume)
@@ -124,7 +133,8 @@ def train(e):
 
     optimizer.zero_grad()
     target = torch.squeeze(target)
-    input, template = input.cuda(async=True), template.cuda(async=True)
+    if USE_CUDA:
+      input, template = input.cuda(async=True), template.cuda(async=True)
 
     recon, mu, logvar, input_stn = net(input)
     loss = loss_function(recon, template, mu, logvar) # reconstruction loss
@@ -151,7 +161,8 @@ def train(e):
   if e%save_epoch == 0:
     class_target = torch.LongTensor(list(range(n_classes)))
     class_template = tr_loader.load_template(class_target)
-    class_template = class_template.cuda(async=True)
+    if USE_CUDA:
+      class_template = class_template.cuda(async=True)
     with torch.no_grad():
       class_recon, class_mu, class_logvar, _ = net(class_template)
     
@@ -200,14 +211,16 @@ def test(e, best_acc):
   # get template latent z
   class_target = torch.LongTensor(list(range(n_classes)))
   class_template = te_loader.load_template(class_target)
-  class_template = class_template.cuda(async=True)
+  if USE_CUDA:
+    class_template = class_template.cuda(async=True)
   with torch.no_grad():
     class_recon, class_mu, class_logvar, _ = net(class_template)
   
   for i, (input, target, template) in enumerate(testloader):
 
     target = torch.squeeze(target)
-    input, template = input.cuda(async=True), template.cuda(async=True)
+    if USE_CUDA:
+      input, template = input.cuda(async=True), template.cuda(async=True)
     with torch.no_grad():
       recon, mu, logvar, input_stn  = net(input)
     
@@ -299,7 +312,7 @@ def test(e, best_acc):
   # Save weights and scores
   # if e % 100 == 0:
   #   pass
-    # torch.save(net.state_dict(), os.path.join('flickr2belga_latest_net.pth'))
+  #   torch.save(net.state_dict(), os.path.join('flickr2belga_latest_net.pth'))
 
   ############# Plot scores
   mean_scores.append(acc_tecls.mean())

@@ -1,19 +1,20 @@
 {
   "gtsrb":
   {
-    "data_path": "/JSspace/VPE/db/"
+
+    "data_path": "/Users/wrytl/code/VPE/db/"
   },
   "gtsrb2TT100K":
   {
-    "data_path": "/JSspace/VPE/db/"
+    "data_path": "/Users/wrytl/code/VPE/db/"
   },
   "belga2flickr":
   {
-    "data_path": "/JSspace/VPE/db/"
+    "data_path": "/Users/wrytl/code/VPE/db/"
   },
 
   "belga2toplogo":
   {
-    "data_path": "/JSspace/VPE/db/"
+    "data_path": "/Users/wrytl/code/VPE/db/"
   }
 }
