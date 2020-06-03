@@ -6,6 +6,13 @@ import torch.nn as nn
 import torch
 import torch.nn.functional as F
 
+USE_CUDA = True
+try:
+    torch.cuda.current_device()
+except:
+    USE_CUDA = False
+
+
 class View(nn.Module):
     def __init__(self):
         super(View, self).__init__()
@@ -145,8 +152,10 @@ class VAEIdsia(nn.Module):
 
     def reparametrize(self, mu, logvar):
         std = logvar.mul(0.5).exp_()
-        # eps = torch.cuda.FloatTensor(std.size()).normal_()
-        eps = torch.FloatTensor(std.size()).normal_()
+        if USE_CUDA:
+            eps = torch.cuda.FloatTensor(std.size()).normal_()
+        else:
+            eps = torch.FloatTensor(std.size()).normal_()
         eps = Variable(eps)
         return eps.mul(std).add_(mu)
 
