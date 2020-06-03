@@ -134,7 +134,7 @@ def train(e):
     optimizer.zero_grad()
     target = torch.squeeze(target)
     if USE_CUDA:
-      input, template = input.cuda(async=True), template.cuda(async=True)
+      input, template = input.cuda(non_blocking=True), template.cuda(non_blocking=True)
 
     recon, mu, logvar, input_stn = net(input)
     loss = loss_function(recon, template, mu, logvar) # reconstruction loss
@@ -162,7 +162,7 @@ def train(e):
     class_target = torch.LongTensor(list(range(n_classes)))
     class_template = tr_loader.load_template(class_target)
     if USE_CUDA:
-      class_template = class_template.cuda(async=True)
+      class_template = class_template.cuda(non_blocking=True)
     with torch.no_grad():
       class_recon, class_mu, class_logvar, _ = net(class_template)
     
@@ -212,7 +212,7 @@ def test(e, best_acc):
   class_target = torch.LongTensor(list(range(n_classes)))
   class_template = te_loader.load_template(class_target)
   if USE_CUDA:
-    class_template = class_template.cuda(async=True)
+    class_template = class_template.cuda(non_blocking=True)
   with torch.no_grad():
     class_recon, class_mu, class_logvar, _ = net(class_template)
   
@@ -220,7 +220,7 @@ def test(e, best_acc):
 
     target = torch.squeeze(target)
     if USE_CUDA:
-      input, template = input.cuda(async=True), template.cuda(async=True)
+      input, template = input.cuda(non_blocking=True), template.cuda(non_blocking=True)
     with torch.no_grad():
       recon, mu, logvar, input_stn  = net(input)
     
