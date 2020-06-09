@@ -143,12 +143,12 @@ def train(e):
 
   print('start train epoch: %d'%e)
   net.train()
-  tf_encoder_model = models.vaeIdsiaStnTF.create_encoder_model()
+  # tf_encoder_model = models.vaeIdsiaStnTF.create_encoder_model()
   for i, (input, target, template) in enumerate(trainloader):
 
     optimizer.zero_grad()
     target = torch.squeeze(target)
-    print("input.shape:",input.shape)
+
     if USE_CUDA:
       input, template = input.cuda(non_blocking=True), template.cuda(non_blocking=True)
 
@@ -195,7 +195,10 @@ def train(e):
     f_loss = open(os.path.join(result_path, "log_loss.txt"),'a')
     f_loss.write('Epoch:%d  Batch:%d/%d  loss:%08f\n'%(e, i, batch_iter, loss.data/input.numel()))
     f_loss.close()
-    
+
+
+
+    tf_model.save_weights(f'/Users/wrytl/save_model.h5')
     loss.backward()
     optimizer.step()
 
@@ -217,7 +220,7 @@ def train(e):
       class_template = class_template.cuda(non_blocking=True)
     with torch.no_grad():
       class_recon, class_mu, class_logvar, _ = net(class_template)
-    
+    tf_model.save_weights(f'/Users/wrytl/save_model.h5')
     torchvision.utils.save_image(class_template.data, '{}/templates.jpg'.format(out_folder), nrow=8, padding=2)  
     torchvision.utils.save_image(class_recon.data, '{}/templates_recon.jpg'.format(out_folder), nrow=8, padding=2) 
   
