@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 import imageio as m
 import scipy.misc
 import skimage
-
+import skimage.transform
 # from augmentations import *
 # from models import get_model
 import random
