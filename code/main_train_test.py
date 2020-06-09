@@ -158,8 +158,12 @@ def train(e):
 
 
     # convert to tensorflow ordering:
-    data_for_tf = input.data.numpy().transpose((0, 3, 2, 1))
-    target_for_tf =template.data.numpy().transpose((0, 3, 2, 1))
+    if USE_CUDA:
+      data_for_tf = input.cpu().data.numpy().transpose((0, 3, 2, 1))
+      target_for_tf = template.cpu().data.numpy().transpose((0, 3, 2, 1))
+    else:
+      data_for_tf = input.data.numpy().transpose((0, 3, 2, 1))
+      target_for_tf =template.data.numpy().transpose((0, 3, 2, 1))
     # mean, logvar = tf_model.encode(data_for_tf)
     # res = tf_encoder_model(data_for_tf)
 
