@@ -111,14 +111,14 @@ reconstruction_function = nn.BCELoss()
 reconstruction_function.reduction = 'sum'
 def loss_function(recon_x, x, mu, logvar):
     BCE = reconstruction_function(recon_x, x)
-    x_for_tf = x.data.numpy().transpose((0,2,3,1))
-    recon_x_for_tf = recon_x.data.numpy().transpose((0,2,3,1))
-    mu_for_tf = mu.data.numpy()
-    logvar_for_tf = logvar.data.numpy()
-
-
-    BCE_tf = tf.keras.losses.BinaryCrossentropy()(x_for_tf, recon_x_for_tf)
-    KLD_tf = -0.5*tf.reduce_sum(1+ logvar_for_tf - (tf.pow(mu_for_tf,2) + tf.exp(logvar_for_tf)))
+    # x_for_tf = x.data.numpy().transpose((0,2,3,1))
+    # recon_x_for_tf = recon_x.data.numpy().transpose((0,2,3,1))
+    # mu_for_tf = mu.data.numpy()
+    # logvar_for_tf = logvar.data.numpy()
+    #
+    #
+    # BCE_tf = tf.keras.losses.BinaryCrossentropy()(x_for_tf, recon_x_for_tf)
+    # KLD_tf = -0.5*tf.reduce_sum(1+ logvar_for_tf - (tf.pow(mu_for_tf,2) + tf.exp(logvar_for_tf)))
 
     # tf.nn.sigmoid_cross_entropy_with_logits(recon_x_for_tf,x_for_tf)
     KLD_element = mu.pow(2).add_(logvar.exp()).mul_(-1).add_(1).add_(logvar)
