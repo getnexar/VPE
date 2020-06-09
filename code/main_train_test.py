@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 import os
+import tensorflow as tf
 import random
 from matplotlib import pyplot as plt
 import numpy as np
@@ -15,11 +16,11 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 import torchvision
 from torchvision import datasets, transforms
-
+import models
 from loader import get_loader, get_data_path
 from models import get_model
 from augmentations import *
-
+from models.vaeIdsiaStnTF import create_encoder_model, CVAE, train_step, get_optimizer, compute_loss_tf
 
 USE_CUDA = True
 try:
@@ -31,18 +32,18 @@ except:
 # Setup
 parser = ArgumentParser(description='Variational Prototyping Encoder (VPE)')
 parser.add_argument('--seed',       type=int,   default=42,             help='Random seed')
-parser.add_argument('--arch',       type=str,   default='vaeIdsiaStn',  help='network type: vaeIdsia, vaeIdsiaStn')
+parser.add_argument('--arch',       type=str,   default='vaeIdsia',  help='network type: vaeIdsia, vaeIdsiaStn')
 parser.add_argument('--dataset',    type=str,   default='gtsrb2TT100K', help='dataset to use [gtsrb, gtsrb2TT100K, belga2flickr, belga2toplogo]')
 parser.add_argument('--exp',        type=str,   default='exp_list',     help='training scenario')
 parser.add_argument('--resume',     type=str,   default=None,           help='Resume training from previously saved model')
 
 parser.add_argument('--epochs',     type=int,   default=2000,           help='Training epochs')
 parser.add_argument('--lr',         type=float, default=1e-4,           help='Learning rate')
-parser.add_argument('--batch_size', type=int,   default=128,            help='Batch size')
+parser.add_argument('--batch_size', type=int,   default=16,            help='Batch size')
 
 parser.add_argument('--img_cols',   type=int,   default=64,             help='resized image width')
 parser.add_argument('--img_rows',   type=int,   default=64,             help='resized image height')
-parser.add_argument('--workers',    type=int,   default=4,              help='Data loader workers')
+parser.add_argument('--workers',    type=int,   default=0,              help='Data loader workers')
 
 args = parser.parse_args()
 
@@ -110,6 +111,16 @@ reconstruction_function = nn.BCELoss()
 reconstruction_function.reduction = 'sum'
 def loss_function(recon_x, x, mu, logvar):
     BCE = reconstruction_function(recon_x, x)
+    x_for_tf = x.data.numpy().transpose((0,2,3,1))
+    recon_x_for_tf = recon_x.data.numpy().transpose((0,2,3,1))
+    mu_for_tf = mu.data.numpy()
+    logvar_for_tf = logvar.data.numpy()
+
+
+    BCE_tf = tf.keras.losses.BinaryCrossentropy()(x_for_tf, recon_x_for_tf)
+    KLD_tf = -0.5*tf.reduce_sum(1+ logvar_for_tf - (tf.pow(mu_for_tf,2) + tf.exp(logvar_for_tf)))
+
+    # tf.nn.sigmoid_cross_entropy_with_logits(recon_x_for_tf,x_for_tf)
     KLD_element = mu.pow(2).add_(logvar.exp()).mul_(-1).add_(1).add_(logvar)
     KLD = torch.sum(KLD_element).mul_(-0.5)
     return BCE + KLD
@@ -122,23 +133,60 @@ num_test = len(te_loader.targets)
 batch_iter = math.ceil(num_train/args.batch_size)
 batch_iter_test = math.ceil(num_test/args.batch_size)
 
+
+tf_model = CVAE(latent_dim=300)
+tf_optimizer = get_optimizer()
+
 def train(e):
   n_classes = tr_loader.n_classes
   n_classes_te = te_loader.n_classes
 
   print('start train epoch: %d'%e)
   net.train()
-  
+  tf_encoder_model = models.vaeIdsiaStnTF.create_encoder_model()
   for i, (input, target, template) in enumerate(trainloader):
 
     optimizer.zero_grad()
     target = torch.squeeze(target)
+    print("input.shape:",input.shape)
     if USE_CUDA:
       input, template = input.cuda(non_blocking=True), template.cuda(non_blocking=True)
 
+
+
     recon, mu, logvar, input_stn = net(input)
+
+
+    # convert to tensorflow ordering:
+    data_for_tf = input.data.numpy().transpose((0, 3, 2, 1))
+    target_for_tf =template.data.numpy().transpose((0, 3, 2, 1))
+    # mean, logvar = tf_model.encode(data_for_tf)
+    # res = tf_encoder_model(data_for_tf)
+
+    # mean, logvar = tf_model.encode(data_for_tf)
+    # z = tf_model.reparameterize(mean, logvar)
+    # predictions = tf_model.sample(z)
+    #
+    # for i in range(100):
+    #   train_step(model=tf_model,x=data_for_tf, target=target_for_tf,optimizer=tf_optimizer)
+    #
+    #   mean, logvar = tf_model.encode(data_for_tf)
+    #   z = tf_model.reparameterize(mean, logvar)
+    #   predictions = tf_model.sample(z)
+    # print('yo')
+
+
+    # print("res.shape", res.shape)
     loss = loss_function(recon, template, mu, logvar) # reconstruction loss
-    print('Epoch:%d  Batch:%d/%d  loss:%08f'%(e, i, batch_iter, loss.data/input.numel()))
+
+    # loss_tf = compute_loss_tf(recon_x=recon.data.numpy().transpose((0, 2, 3, 1)),
+    #                           x=template.data.numpy().transpose((0, 2, 3, 1)),
+    #                           mean=mu.data.numpy(),
+    #                           logvar=logvar.data.numpy())
+    loss_tf = train_step(model=tf_model, x=data_for_tf, target=target_for_tf, optimizer=tf_optimizer)
+
+    # compute_loss_tf()
+    print(f'Epoch:{e}  Batch:{i}/{batch_iter}  loss:{loss.data/input.numel()} tf_loss:{loss_tf}')
    
     f_loss = open(os.path.join(result_path, "log_loss.txt"),'a')
     f_loss.write('Epoch:%d  Batch:%d/%d  loss:%08f\n'%(e, i, batch_iter, loss.data/input.numel()))
@@ -335,6 +383,7 @@ def test(e, best_acc):
   return best_acc
 
 if __name__ == "__main__":
+
   out_root = Path(outimg_path)
   if not out_root.is_dir():
     os.mkdir(out_root)

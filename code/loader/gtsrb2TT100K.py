@@ -1,7 +1,11 @@
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-import scipy.misc as m
+# import scipy.misc as m
+import imageio as m
+import scipy.misc
+import skimage
+
 # from augmentations import *
 # from models import get_model
 import random
@@ -71,6 +75,7 @@ class gtsrb2TT100KLoader(Dataset):
     gt = torch.ones(1).type(torch.LongTensor)*gt
 
     # Load images and templates. perform augmentations
+
     img = m.imread(img_path)
     img = np.array(img, dtype=np.uint8)
     template = m.imread(self.root + self.split + '/template_ordered/%02d.jpg'%(gt))
@@ -94,7 +99,7 @@ class gtsrb2TT100KLoader(Dataset):
     img = img.astype(np.float64)
     img -= self.mean
     if self.img_size is not None:
-      img = m.imresize(img, (self.img_size[0], self.img_size[1]))
+      img = skimage.transform.resize(img, (self.img_size[0], self.img_size[1]))
     # Resize scales images from 0 to 255, thus we need
     # to divide by 255.0
     img = img.astype(float) / 255.0
