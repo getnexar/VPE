@@ -39,11 +39,11 @@ parser.add_argument('--resume',     type=str,   default=None,           help='Re
 
 parser.add_argument('--epochs',     type=int,   default=2000,           help='Training epochs')
 parser.add_argument('--lr',         type=float, default=1e-4,           help='Learning rate')
-parser.add_argument('--batch_size', type=int,   default=16,            help='Batch size')
+parser.add_argument('--batch_size', type=int,   default=128,            help='Batch size')
 
 parser.add_argument('--img_cols',   type=int,   default=64,             help='resized image width')
 parser.add_argument('--img_rows',   type=int,   default=64,             help='resized image height')
-parser.add_argument('--workers',    type=int,   default=0,              help='Data loader workers')
+parser.add_argument('--workers',    type=int,   default=4,              help='Data loader workers')
 
 args = parser.parse_args()
 
