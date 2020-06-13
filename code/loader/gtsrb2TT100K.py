@@ -41,8 +41,9 @@ class gtsrb2TT100KLoader(Dataset):
     self.mean = np.array([125.00, 125.00, 125.00]) # average intensity
 
     self.root = root
-    self.dataPath = root + exp + '/' + self.split + '_impaths_all.txt'
-    self.labelPath = root + exp + '/' + self.split + '_imclasses_all.txt'
+    import os
+    self.dataPath = os.path.join(root, exp, self.split +'_impaths_all.txt')
+    self.labelPath = os.path.join(root,exp , self.split + '_imclasses_all.txt')
 
     f_data = open(self.dataPath,'r')
     f_label = open(self.labelPath,'r')
@@ -53,7 +54,7 @@ class gtsrb2TT100KLoader(Dataset):
       self.inputs.append(root+data_lines[i][0:-1])
       self.targets.append(int(label_lines[i].split()[0])) # label: [road class, wet/dry, video index]
     
-    classnamesPath = root + exp + '/' + self.split + '_classnames.txt'
+    classnamesPath = os.path.join(root , exp , self.split + '_classnames.txt')
     f_classnames = open(classnamesPath, 'r')
     data_lines = f_classnames.readlines()
     for i in range(len(data_lines)):

@@ -1,7 +1,10 @@
+import pdb
+
 import numpy as np
+import imageio
 import torch
 from torch.utils.data import Dataset
-import scipy.misc as m
+# import scipy.misc as m
 # from augmentations import *
 # from models import get_model
 import random
@@ -39,10 +42,10 @@ class belga2flickrLoader(Dataset):
     self.is_transform = is_transform
     self.augmentations = augmentations
     self.mean = np.array([125.00, 125.00, 125.00]) # average intensity
-
+    import os
     self.root = root
-    self.dataPath = root + exp + '/' + self.split + '_impaths.txt'
-    self.labelPath = root + exp + '/' + self.split + '_imclasses.txt'
+    self.dataPath = os.path.join(root , exp ,  self.split + '_impaths.txt')
+    self.labelPath = os.path.join(root , exp ,self.split + '_imclasses.txt')
 
     f_data = open(self.dataPath,'r')
     f_label = open(self.labelPath,'r')
@@ -50,10 +53,11 @@ class belga2flickrLoader(Dataset):
     label_lines = f_label.readlines()
 
     for i in range(len(data_lines)):
-      self.inputs.append(root+data_lines[i][0:-1])
-      self.targets.append(int(label_lines[i].split()[0])) # label: [road class, wet/dry, video index]
+        self.inputs.append(os.path.join(root, data_lines[i][0:-1].replace("/", "\\")))
+        # self.inputs.append(root+data_lines[i][0:-1])
+        self.targets.append(int(label_lines[i].split()[0])) # label: [road class, wet/dry, video index]
     
-    classnamesPath = root + exp + '/' + self.split + '_classnames.txt'
+    classnamesPath = os.path.join(root , exp, self.split + '_classnames.txt')
     f_classnames = open(classnamesPath, 'r')
     data_lines = f_classnames.readlines()
     for i in range(len(data_lines)):
@@ -75,9 +79,11 @@ class belga2flickrLoader(Dataset):
         pdb.set_trace()
 
     # Load images and templates. perform augmentations
-    img = m.imread(img_path)
+
+    img = imageio.imread(img_path)
     img = np.array(img, dtype=np.uint8)
-    template = m.imread(self.root + self.split + '/template_ordered/%02d.jpg'%(gt))
+    import os
+    template = imageio.imread(os.path.join(self.root , self.split , 'template_ordered','%02d.jpg'%(gt)))
     template = np.array(template, dtype=np.uint8)
 
     if random.random() < self.proto_rate :
@@ -95,8 +101,9 @@ class belga2flickrLoader(Dataset):
   def transform(self, img):
     img = img.astype(np.float64)
     img -= self.mean
+    import skimage.transform
     if self.img_size is not None:
-      img = m.imresize(img, (self.img_size[0], self.img_size[1]))
+      img = skimage.transform.resize(img, (self.img_size[0], self.img_size[1]))
     # Resize scales images from 0 to 255, thus we need
     # to divide by 255.0
     img = img.astype(float) / 255.0
@@ -114,11 +121,12 @@ class belga2flickrLoader(Dataset):
     img_paths = []
     
     for id in target:
-        img_paths.append(self.root + self.split +'/template_ordered/%02d.jpg'%(id+1))
+        import os
+        img_paths.append( os.path.join(self.root , self.split , 'template_ordered','%02d.jpg'%(id+1)))
 
     target_img = []
     for img_path in img_paths:
-        img = m.imread(img_path)
+        img = imageio.imread(img_path)
         img = np.array(img, dtype=np.uint8)
 
         if augmentations is not None:

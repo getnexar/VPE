@@ -13,51 +13,101 @@ import numpy as np
 
 import tensorflow as tf
 from tensorflow import keras
+#
+# def create_encoder_model(latent_dim=300):
+#     input_layer = tf.keras.layers.Input((64,64,3))
+#     x = tf.keras.layers.Conv2D(filters=100,kernel_size=(7,7), strides=(2,2),padding='same')(input_layer)
+#     x = tf.keras.layers.BatchNormalization()(x)
+#     x = tf.keras.layers.LeakyReLU(0.2)(x)
+#
+#     x = tf.keras.layers.Conv2D(filters=150, kernel_size=(4, 4), strides=(2, 2),padding='same')(x)
+#     x = tf.keras.layers.BatchNormalization()(x)
+#     x = tf.keras.layers.LeakyReLU(0.2)(x)
+#
+#     x = tf.keras.layers.Conv2D(filters=250, kernel_size=(4, 4), strides=(2, 2),padding='same')(x)
+#     x = tf.keras.layers.BatchNormalization()(x)
+#     x = tf.keras.layers.LeakyReLU(0.2)(x)
+#     x = tf.keras.layers.Flatten()(x)
+#
+#     latent = tf.keras.layers.Dense(latent_dim+latent_dim)(x)
+#     # latent_mean = tf.keras.layers.Dense(300)(x)
+#     encoder_model = tf.keras.models.Model(inputs=input_layer, outputs=latent)
+#     return encoder_model
+
 
 def create_encoder_model(latent_dim=300):
     input_layer = tf.keras.layers.Input((64,64,3))
     x = tf.keras.layers.Conv2D(filters=100,kernel_size=(7,7), strides=(2,2),padding='same')(input_layer)
     x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.LeakyReLU()(x)
-
-    x = tf.keras.layers.Conv2D(filters=150, kernel_size=(4, 4), strides=(2, 2),padding='same')(x)
-    x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.LeakyReLU()(x)
-
-    x = tf.keras.layers.Conv2D(filters=250, kernel_size=(4, 4), strides=(2, 2),padding='same')(x)
-    x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.LeakyReLU()(x)
+    x = tf.keras.layers.LeakyReLU(0.2)(x)
+    #
+    # x = tf.keras.layers.Conv2D(filters=150, kernel_size=(4, 4), strides=(2, 2),padding='same')(x)
+    # x = tf.keras.layers.BatchNormalization()(x)
+    # x = tf.keras.layers.LeakyReLU(0.2)(x)
+    #
+    # x = tf.keras.layers.Conv2D(filters=250, kernel_size=(4, 4), strides=(2, 2),padding='same')(x)
+    # x = tf.keras.layers.BatchNormalization()(x)
+    # x = tf.keras.layers.LeakyReLU(0.2)(x)
     x = tf.keras.layers.Flatten()(x)
 
-    latent = tf.keras.layers.Dense(latent_dim+latent_dim)(x)
+    latent1 = tf.keras.layers.Dense(latent_dim)(x)
+    latent2 = tf.keras.layers.Dense(latent_dim)(x)
+    latent = tf.keras.layers.concatenate([latent1, latent2])
     # latent_mean = tf.keras.layers.Dense(300)(x)
     encoder_model = tf.keras.models.Model(inputs=input_layer, outputs=latent)
     return encoder_model
 
 
+#
+# def create_decoder_model(latent=300):
+#     input_layer = tf.keras.layers.Input((latent))
+#     x = tf.keras.layers.Dense(8*8*250)(input_layer)
+#     x = tf.keras.layers.ReLU()(x)
+#     x = tf.keras.layers.Reshape((8,8,250))(x)
+#
+#     x = tf.keras.layers.UpSampling2D(size=(2,2))(x)
+#     x = tf.keras.layers.Conv2D(filters=150, kernel_size=(3, 3),padding='same')(x)
+#     x = tf.keras.layers.BatchNormalization()(x)
+#     x = tf.keras.layers.LeakyReLU(0.2)(x)
+#
+#     x = tf.keras.layers.UpSampling2D(size=(2, 2))(x)
+#     x = tf.keras.layers.Conv2D(filters=100, kernel_size=(3, 3),padding='same')(x)
+#     x = tf.keras.layers.BatchNormalization()(x)
+#     x = tf.keras.layers.LeakyReLU(0.2)(x)
+#
+#     x = tf.keras.layers.UpSampling2D(size=(2, 2))(x)
+#     x = tf.keras.layers.Conv2D(filters=3, kernel_size=(3, 3),padding='same')(x)
+#     # x = tf.keras.layers.BatchNormalization()(x)
+#     x = tf.keras.layers.Activation(activation='sigmoid')(x)
+#
+#     model = tf.keras.models.Model(inputs=input_layer,outputs=x)
+#     return model
+#
+
+
 def create_decoder_model(latent=300):
     input_layer = tf.keras.layers.Input((latent))
-    x = tf.keras.layers.Dense(8*8*250)(input_layer)
-    x = tf.keras.layers.Reshape((8,8,250))(x)
+    x = tf.keras.layers.Dense(32*32*100)(input_layer)
+    x = tf.keras.layers.ReLU()(x)
+    x = tf.keras.layers.Reshape((32,32,100))(x)
 
-    x = tf.keras.layers.UpSampling2D(size=(2,2))(x)
-    x = tf.keras.layers.Conv2D(filters=150, kernel_size=(3, 3),padding='same')(x)
-    x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.LeakyReLU()(x)
+    # x = tf.keras.layers.UpSampling2D(size=(2,2))(x)
+    # x = tf.keras.layers.Conv2D(filters=150, kernel_size=(3, 3),padding='same')(x)
+    # x = tf.keras.layers.BatchNormalization()(x)
+    # x = tf.keras.layers.LeakyReLU(0.2)(x)
 
-    x = tf.keras.layers.UpSampling2D(size=(2, 2))(x)
-    x = tf.keras.layers.Conv2D(filters=100, kernel_size=(3, 3),padding='same')(x)
-    x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.LeakyReLU()(x)
+    # x = tf.keras.layers.UpSampling2D(size=(2, 2))(x)
+    # x = tf.keras.layers.Conv2D(filters=100, kernel_size=(3, 3),padding='same')(x)
+    # x = tf.keras.layers.BatchNormalization()(x)
+    # x = tf.keras.layers.LeakyReLU(0.2)(x)
 
     x = tf.keras.layers.UpSampling2D(size=(2, 2))(x)
     x = tf.keras.layers.Conv2D(filters=3, kernel_size=(3, 3),padding='same')(x)
     # x = tf.keras.layers.BatchNormalization()(x)
-    # x = tf.keras.layers.LeakyReLU()(x)
+    x = tf.keras.layers.Activation(activation='sigmoid')(x)
 
     model = tf.keras.models.Model(inputs=input_layer,outputs=x)
     return model
-
 # class stn_tf()
 
 class CVAE(tf.keras.Model):
@@ -70,7 +120,7 @@ class CVAE(tf.keras.Model):
 
     self.decoder = create_decoder_model(self.latent_dim)
 
-  @tf.function
+  # @tf.function
   def sample(self, eps=None):
     if eps is None:
       eps = tf.random.normal(shape=(100, self.latent_dim))
@@ -82,6 +132,7 @@ class CVAE(tf.keras.Model):
 
   def reparameterize(self, mean, logvar):
     eps = tf.random.normal(shape=mean.shape)
+    # eps = 0
     return eps * tf.exp(logvar * .5) + mean
 
   def decode(self, z, apply_sigmoid=False):
@@ -120,14 +171,17 @@ def compute_loss_tf(x, recon_x, mean, logvar, reduction_type='mean'):
         KLD_tf = -0.5 * tf.reduce_sum(1 + logvar - (tf.pow(mean, 2) + tf.exp(logvar)))
     else:
         raise NotImplementedError("Only reduction of type 'mean' or 'sum' are avaialbe")
-    return BCE_tf + KLD_tf
+    return BCE_tf #+ KLD_tf
 
 def compute_loss_from_model(target, origin_image, model):
     mean, logvar = model.encode(origin_image)
     z = model.reparameterize(mean, logvar)
     x_logit = model.decode(z)
-    loss = compute_loss_tf(x=target,recon_x=x_logit,mean=mean,logvar=logvar)
-    return loss
+    loss = compute_loss_tf(x=target,
+                           recon_x=x_logit,
+                           mean=mean,
+                           logvar=logvar)
+    return loss, x_logit
     # cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=x_logit, labels=origin_image)
     # logpx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
     # logpz = log_normal_pdf(z, 0., 0.)
@@ -151,12 +205,15 @@ def compute_loss_from_model(target, origin_image, model):
 
 
 def get_optimizer():
-    vae_optimizer = tf.keras.optimizers.Adam(1e-4)
+    # vae_optimizer = tf.keras.optimizers.Adam(1e-4)
+    #betas=(0.9, 0.999), eps=1e-8, weight_decay=0
+    vae_optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001, epsilon=1e-8)
+    # vae_optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.0000p1, epsilon=1e-8)
     return vae_optimizer
 
 
 
-@tf.function
+# @tf.function
 def train_step(model, x, target, optimizer):
   """Executes one training step and returns the loss.
 
@@ -164,9 +221,9 @@ def train_step(model, x, target, optimizer):
   update the model's parameters.
   """
   with tf.GradientTape() as tape:
-      loss = compute_loss_from_model(target=target,origin_image=x, model=model)
-      print(f"tf_loss:{loss}")
+      loss, x_logit = compute_loss_from_model(target=target,origin_image=x, model=model)
+      # print(f"tf_loss:{loss}")
 
   gradients = tape.gradient(loss, model.trainable_variables)
   optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-  return loss
+  return loss,x_logit

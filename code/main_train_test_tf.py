@@ -1,16 +1,4 @@
 import tensorflow as tf
-gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-  try:
-    # Currently, memory growth needs to be the same across GPUs
-    for gpu in gpus:
-      tf.config.experimental.set_memory_growth(gpu, True)
-    logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-    print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-  except RuntimeError as e:
-    # Memory growth must be set before GPUs have been initialized
-    print(e)
-
 from argparse import ArgumentParser
 import os
 
@@ -41,10 +29,11 @@ try:
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 except:
     USE_CUDA = False
+USE_CUDA = False
 
 # Setup
 parser = ArgumentParser(description='Variational Prototyping Encoder (VPE)')
-parser.add_argument('--seed',       type=int,   default=43,             help='Random seed')
+parser.add_argument('--seed',       type=int,   default=42,             help='Random seed')
 parser.add_argument('--arch',       type=str,   default='vaeIdsia',  help='network type: vaeIdsia, vaeIdsiaStn')
 parser.add_argument('--dataset',    type=str,   default='belga2flickr', help='dataset to use [gtsrb, gtsrb2TT100K, belga2flickr, belga2toplogo]')
 parser.add_argument('--exp',        type=str,   default='exp_list',     help='training scenario')
@@ -52,7 +41,7 @@ parser.add_argument('--resume',     type=str,   default=None,           help='Re
 
 parser.add_argument('--epochs',     type=int,   default=2000,           help='Training epochs')
 parser.add_argument('--lr',         type=float, default=1e-4,           help='Learning rate')
-parser.add_argument('--batch_size', type=int,   default=4,            help='Batch size')
+parser.add_argument('--batch_size', type=int,   default=8,            help='Batch size')
 
 parser.add_argument('--img_cols',   type=int,   default=64,             help='resized image width')
 parser.add_argument('--img_rows',   type=int,   default=64,             help='resized image height')
@@ -134,9 +123,9 @@ def loss_function(recon_x, x, mu, logvar):
     # KLD_tf = -0.5*tf.reduce_sum(1+ logvar_for_tf - (tf.pow(mu_for_tf,2) + tf.exp(logvar_for_tf)))
 
     # tf.nn.sigmoid_cross_entropy_with_logits(recon_x_for_tf,x_for_tf)
-    # KLD_element = mu.pow(2).add_(logvar.exp()).mul_(-1).add_(1).add_(logvar)
-    # KLD = torch.sum(KLD_element).mul_(-0.5)
-    return BCE# + KLD
+    KLD_element = mu.pow(2).add_(logvar.exp()).mul_(-1).add_(1).add_(logvar)
+    KLD = torch.sum(KLD_element).mul_(-0.5)
+    return BCE + KLD
 
 # Construct optimiser
 optimizer = optim.Adam(net.parameters(), lr=args.lr) # 1e-4
@@ -147,7 +136,7 @@ batch_iter = math.ceil(num_train/args.batch_size)
 batch_iter_test = math.ceil(num_test/args.batch_size)
 
 
-tf_model = CVAE(latent_dim=300)
+tf_model = CVAE(latent_dim=10)
 tf_optimizer = get_optimizer()
 
 def train(e):
@@ -207,10 +196,9 @@ def train(e):
     loss_tf, x_logit = train_step(model=tf_model, x=data_for_tf, target=target_for_tf, optimizer=tf_optimizer)
 
 
-    if i % 100 == 0:
-      print('here')
-
     # compute_loss_tf()
+  if i % 100:
+    print('here')
 
     print(f'Epoch:{e}  Batch:{i}/{batch_iter}  loss:{loss.data/input.numel()} tf_loss:{loss_tf}')
    
@@ -225,14 +213,13 @@ def train(e):
     optimizer.step()
 
     # if i < 1 and (e%save_epoch == 0):
-    if i % 100 == 0:
+    if i % 10:
       out_folder =  "%s/Epoch_%d_train"%(outimg_path, e)
       out_root = Path(out_folder)
       if not out_root.is_dir():
         os.mkdir(out_root)
-      tensor_recon_tf = torch.from_numpy(x_logit.numpy().transpose((0,3,1,2))).float()
+
       torchvision.utils.save_image(input.data, '{}/batch_{}_data.jpg'.format(out_folder,i), nrow=8, padding=2)
-      torchvision.utils.save_image(tensor_recon_tf.data, '{}/batch_{}_recon_tf.jpg'.format(out_folder, i), nrow=8, padding=2)
       torchvision.utils.save_image(input_stn.data, '{}/batch_{}_data_stn.jpg'.format(out_folder, i), nrow=8, padding=2) 
       torchvision.utils.save_image(recon.data, '{}/batch_{}_recon.jpg'.format(out_folder,i), nrow=8, padding=2)
       torchvision.utils.save_image(template.data, '{}/batch_{}_target.jpg'.format(out_folder,i), nrow=8, padding=2)

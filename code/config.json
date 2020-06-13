@@ -2,19 +2,19 @@
   "gtsrb":
   {
 
-    "data_path": "/Users/wrytl/code/VPE/db/"
+    "data_path": "D:\\git\\VPE\\code\\db"
   },
   "gtsrb2TT100K":
   {
-    "data_path": "/Users/wrytl/code/VPE/db/"
+    "data_path": "D:\\git\\VPE\\code\\db"
   },
   "belga2flickr":
   {
-    "data_path": "/Users/wrytl/code/VPE/db/"
+    "data_path": "D:\\git\\VPE\\code\\db"
   },
 
   "belga2toplogo":
   {
-    "data_path": "/Users/wrytl/code/VPE/db/"
+    "data_path": "D:\\git\\VPE\\code\\db"
   }
 }
