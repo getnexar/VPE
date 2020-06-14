@@ -53,8 +53,12 @@ class belga2flickrLoader(Dataset):
     label_lines = f_label.readlines()
 
     for i in range(len(data_lines)):
+        data_line_to_add = data_lines[i][0:-1]
         if os.path.sep != "/":
-            self.inputs.append(os.path.join(root, data_lines[i][0:-1].replace("/", os.path.sep)))
+            data_line_to_add = data_line_to_add.replace("/", os.path.sep)
+
+        self.inputs.append(os.path.join(root, data_line_to_add))
+
         # self.inputs.append(root+data_lines[i][0:-1])
         self.targets.append(int(label_lines[i].split()[0])) # label: [road class, wet/dry, video index]
     
