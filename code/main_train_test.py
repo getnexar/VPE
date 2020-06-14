@@ -52,7 +52,7 @@ parser.add_argument('--resume',     type=str,   default=None,           help='Re
 
 parser.add_argument('--epochs',     type=int,   default=2000,           help='Training epochs')
 parser.add_argument('--lr',         type=float, default=1e-4,           help='Learning rate')
-parser.add_argument('--batch_size', type=int,   default=4,            help='Batch size')
+parser.add_argument('--batch_size', type=int,   default=64,            help='Batch size')
 
 parser.add_argument('--img_cols',   type=int,   default=64,             help='resized image width')
 parser.add_argument('--img_rows',   type=int,   default=64,             help='resized image height')
@@ -134,9 +134,9 @@ def loss_function(recon_x, x, mu, logvar):
     # KLD_tf = -0.5*tf.reduce_sum(1+ logvar_for_tf - (tf.pow(mu_for_tf,2) + tf.exp(logvar_for_tf)))
 
     # tf.nn.sigmoid_cross_entropy_with_logits(recon_x_for_tf,x_for_tf)
-    # KLD_element = mu.pow(2).add_(logvar.exp()).mul_(-1).add_(1).add_(logvar)
-    # KLD = torch.sum(KLD_element).mul_(-0.5)
-    return BCE# + KLD
+    KLD_element = mu.pow(2).add_(logvar.exp()).mul_(-1).add_(1).add_(logvar)
+    KLD = torch.sum(KLD_element).mul_(-0.5)
+    return BCE + KLD
 
 # Construct optimiser
 optimizer = optim.Adam(net.parameters(), lr=args.lr) # 1e-4
@@ -159,8 +159,8 @@ def train(e):
   # tf_encoder_model = models.vaeIdsiaStnTF.create_encoder_model()
 
   for i, (input, target, template) in enumerate(trainloader):
-    break
-  for i in range(6000):
+    # break
+  # for i in range(6000):
   # for i, (input, target, template) in enumerate(trainloader):
 
     optimizer.zero_grad()
@@ -213,6 +213,7 @@ def train(e):
     # compute_loss_tf()
 
     print(f'Epoch:{e}  Batch:{i}/{batch_iter}  loss:{loss.data/input.numel()} tf_loss:{loss_tf}')
+
    
     f_loss = open(os.path.join(result_path, "log_loss.txt"),'a')
     f_loss.write('Epoch:%d  Batch:%d/%d  loss:%08f\n'%(e, i, batch_iter, loss.data/input.numel()))
@@ -225,11 +226,13 @@ def train(e):
     optimizer.step()
 
     # if i < 1 and (e%save_epoch == 0):
-    if i % 100 == 0:
+    if i % 10 == 0:
       out_folder =  "%s/Epoch_%d_train"%(outimg_path, e)
       out_root = Path(out_folder)
       if not out_root.is_dir():
         os.mkdir(out_root)
+      if i == 0:
+          tf_model.save_weights(os.path.join(out_folder,f'save_model.h5'))
       tensor_recon_tf = torch.from_numpy(x_logit.numpy().transpose((0,3,1,2))).float()
       torchvision.utils.save_image(input.data, '{}/batch_{}_data.jpg'.format(out_folder,i), nrow=8, padding=2)
       torchvision.utils.save_image(tensor_recon_tf.data, '{}/batch_{}_recon_tf.jpg'.format(out_folder, i), nrow=8, padding=2)
@@ -244,7 +247,7 @@ def train(e):
       class_template = class_template.cuda(non_blocking=True)
     with torch.no_grad():
       class_recon, class_mu, class_logvar, _ = net(class_template)
-    tf_model.save_weights(f'/Users/wrytl/save_model.h5')
+
     torchvision.utils.save_image(class_template.data, '{}/templates.jpg'.format(out_folder), nrow=8, padding=2)  
     torchvision.utils.save_image(class_recon.data, '{}/templates_recon.jpg'.format(out_folder), nrow=8, padding=2) 
   

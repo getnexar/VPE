@@ -39,15 +39,15 @@ def create_encoder_model(latent_dim=300):
     input_layer = tf.keras.layers.Input((64,64,3))
     x = tf.keras.layers.Conv2D(filters=100,kernel_size=(7,7), strides=(2,2),padding='same')(input_layer)
     x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.LeakyReLU(0.2)(x)
-    #
-    # x = tf.keras.layers.Conv2D(filters=150, kernel_size=(4, 4), strides=(2, 2),padding='same')(x)
-    # x = tf.keras.layers.BatchNormalization()(x)
-    # x = tf.keras.layers.LeakyReLU(0.2)(x)
-    #
-    # x = tf.keras.layers.Conv2D(filters=250, kernel_size=(4, 4), strides=(2, 2),padding='same')(x)
-    # x = tf.keras.layers.BatchNormalization()(x)
-    # x = tf.keras.layers.LeakyReLU(0.2)(x)
+    x = tf.keras.layers.LeakyReLU()(x)
+
+    x = tf.keras.layers.Conv2D(filters=150, kernel_size=(4, 4), strides=(2, 2),padding='same')(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.LeakyReLU()(x)
+
+    x = tf.keras.layers.Conv2D(filters=250, kernel_size=(4, 4), strides=(2, 2),padding='same')(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.LeakyReLU()(x)
     x = tf.keras.layers.Flatten()(x)
 
     latent1 = tf.keras.layers.Dense(latent_dim)(x)
@@ -87,19 +87,18 @@ def create_encoder_model(latent_dim=300):
 
 def create_decoder_model(latent=300):
     input_layer = tf.keras.layers.Input((latent))
-    x = tf.keras.layers.Dense(32*32*100)(input_layer)
-    x = tf.keras.layers.ReLU()(x)
-    x = tf.keras.layers.Reshape((32,32,100))(x)
+    x = tf.keras.layers.Dense(8*8*250)(input_layer)
+    x = tf.keras.layers.Reshape((8,8,250))(x)
 
-    # x = tf.keras.layers.UpSampling2D(size=(2,2))(x)
-    # x = tf.keras.layers.Conv2D(filters=150, kernel_size=(3, 3),padding='same')(x)
-    # x = tf.keras.layers.BatchNormalization()(x)
-    # x = tf.keras.layers.LeakyReLU(0.2)(x)
+    x = tf.keras.layers.UpSampling2D(size=(2,2))(x)
+    x = tf.keras.layers.Conv2D(filters=150, kernel_size=(3, 3),padding='same')(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.LeakyReLU()(x)
 
-    # x = tf.keras.layers.UpSampling2D(size=(2, 2))(x)
-    # x = tf.keras.layers.Conv2D(filters=100, kernel_size=(3, 3),padding='same')(x)
-    # x = tf.keras.layers.BatchNormalization()(x)
-    # x = tf.keras.layers.LeakyReLU(0.2)(x)
+    x = tf.keras.layers.UpSampling2D(size=(2, 2))(x)
+    x = tf.keras.layers.Conv2D(filters=100, kernel_size=(3, 3),padding='same')(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.LeakyReLU()(x)
 
     x = tf.keras.layers.UpSampling2D(size=(2, 2))(x)
     x = tf.keras.layers.Conv2D(filters=3, kernel_size=(3, 3),padding='same')(x)
@@ -132,7 +131,7 @@ class CVAE(tf.keras.Model):
 
   def reparameterize(self, mean, logvar):
     eps = tf.random.normal(shape=mean.shape)
-    # eps = 0
+
     return eps * tf.exp(logvar * .5) + mean
 
   def decode(self, z, apply_sigmoid=False):
@@ -171,7 +170,7 @@ def compute_loss_tf(x, recon_x, mean, logvar, reduction_type='mean'):
         KLD_tf = -0.5 * tf.reduce_sum(1 + logvar - (tf.pow(mean, 2) + tf.exp(logvar)))
     else:
         raise NotImplementedError("Only reduction of type 'mean' or 'sum' are avaialbe")
-    return BCE_tf #+ KLD_tf
+    return BCE_tf + KLD_tf
 
 def compute_loss_from_model(target, origin_image, model):
     mean, logvar = model.encode(origin_image)
