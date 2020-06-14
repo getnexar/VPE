@@ -1,0 +1,20 @@
+{
+  "gtsrb":
+  {
+
+    "data_path": "D:\\git\\VPE\\code\\db"
+  },
+  "gtsrb2TT100K":
+  {
+    "data_path": "D:\\git\\VPE\\code\\db"
+  },
+  "belga2flickr":
+  {
+    "data_path": "D:\\git\\VPE\\code\\db"
+  },
+
+  "belga2toplogo":
+  {
+    "data_path": "D:\\git\\VPE\\code\\db"
+  }
+}
