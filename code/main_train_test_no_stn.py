@@ -167,10 +167,10 @@ def train(e):
       if not out_root.is_dir():
         os.mkdir(out_root)
 
-      torchvision.utils.save_image(input.data, '{}/batch_{}_data.jpg'.format(out_folder,i), nrow=8, padding=2)
-      torchvision.utils.save_image(input_stn.data, '{}/batch_{}_data_stn.jpg'.format(out_folder, i), nrow=8, padding=2) 
-      torchvision.utils.save_image(recon.data, '{}/batch_{}_recon.jpg'.format(out_folder,i), nrow=8, padding=2)
-      torchvision.utils.save_image(template.data, '{}/batch_{}_target.jpg'.format(out_folder,i), nrow=8, padding=2)
+      torchvision.utils.save_image(input.data, '{}/no_stn_batch_{}_data.jpg'.format(out_folder,i), nrow=8, padding=2)
+      torchvision.utils.save_image(input_stn.data, '{}/no_stn_batch_{}_data_stn.jpg'.format(out_folder, i), nrow=8, padding=2)
+      torchvision.utils.save_image(recon.data, '{}/no_stn_batch_{}_recon.jpg'.format(out_folder,i), nrow=8, padding=2)
+      torchvision.utils.save_image(template.data, '{}/no_stn_batch_{}_target.jpg'.format(out_folder,i), nrow=8, padding=2)
 
   if e%save_epoch == 0:
     class_target = torch.LongTensor(list(range(n_classes)))
@@ -180,8 +180,8 @@ def train(e):
     with torch.no_grad():
       class_recon, class_mu, class_logvar, _ = net(class_template)
 
-    torchvision.utils.save_image(class_template.data, '{}/templates.jpg'.format(out_folder), nrow=8, padding=2)  
-    torchvision.utils.save_image(class_recon.data, '{}/templates_recon.jpg'.format(out_folder), nrow=8, padding=2) 
+    torchvision.utils.save_image(class_template.data, '{}/no_stn_templates.jpg'.format(out_folder), nrow=8, padding=2)
+    torchvision.utils.save_image(class_recon.data, '{}/no_stn_templates_recon.jpg'.format(out_folder), nrow=8, padding=2)
   
 def score_NN(pred, class_feature, label, n_classes):
 
@@ -251,14 +251,14 @@ def test(e, best_acc):
       if not out_root.is_dir():
         os.mkdir(out_root)
 
-      torchvision.utils.save_image(input.data, '{}/batch_{}_data.jpg'.format(out_folder,i), nrow=8, padding=2)
-      torchvision.utils.save_image(input_stn.data, '{}/batch_{}_data_stn.jpg'.format(out_folder, i), nrow=8, padding=2) 
-      torchvision.utils.save_image(recon.data, '{}/batch_{}_recon.jpg'.format(out_folder,i), nrow=8, padding=2)
-      torchvision.utils.save_image(template.data, '{}/batch_{}_target.jpg'.format(out_folder,i), nrow=8, padding=2)
+      torchvision.utils.save_image(input.data, '{}/no_stn_batch_{}_data.jpg'.format(out_folder,i), nrow=8, padding=2)
+      torchvision.utils.save_image(input_stn.data, '{}/no_stn_batch_{}_data_stn.jpg'.format(out_folder, i), nrow=8, padding=2)
+      torchvision.utils.save_image(recon.data, '{}/no_stn_batch_{}_recon.jpg'.format(out_folder,i), nrow=8, padding=2)
+      torchvision.utils.save_image(template.data, '{}/no_stn_batch_{}_target.jpg'.format(out_folder,i), nrow=8, padding=2)
 
   if e%save_epoch == 0:
-    torchvision.utils.save_image(class_template.data, '{}/templates.jpg'.format(out_folder), nrow=8, padding=2)  
-    torchvision.utils.save_image(class_recon.data, '{}/templates_recon.jpg'.format(out_folder), nrow=8, padding=2)  
+    torchvision.utils.save_image(class_template.data, '{}/no_stn_templates.jpg'.format(out_folder), nrow=8, padding=2)
+    torchvision.utils.save_image(class_recon.data, '{}/no_stn_templates_recon.jpg'.format(out_folder), nrow=8, padding=2)
 
   acc_all = accum_class.sum() / accum_all.sum() 
   acc_cls = torch.div(accum_class, accum_all)
@@ -334,7 +334,7 @@ def test(e, best_acc):
   plt.plot(es, mean_scores, 'b-')
   plt.xlabel('Epoch')
   plt.ylabel('Unseen mean IoU')
-  plt.savefig(os.path.join(result_path, 'unseen_ious.png'))
+  plt.savefig(os.path.join(result_path, 'no_stn_unseen_ious.png'))
   plt.close()
 
   ############# plot rank
