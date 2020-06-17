@@ -7,10 +7,10 @@ import torch
 import torch.nn.functional as F
 
 USE_CUDA = True
-# try:
-#     torch.cuda.current_device()
-# except:
-#     USE_CUDA = False
+try:
+    torch.cuda.current_device()
+except:
+    USE_CUDA = False
 
 
 class View(nn.Module):
@@ -104,13 +104,8 @@ class VAEIdsia(nn.Module):
         self.fc1 = nn.Linear(int(input_size/8*input_size/8*self.cnn_chn[2]), latent_variable_size)
         self.fc2 = nn.Linear(int(input_size/8*input_size/8*self.cnn_chn[2]), latent_variable_size)
 
-        #
-        # self.fc1 = nn.Linear(int(input_size/2*input_size/2*self.cnn_chn[0]), latent_variable_size)
-        # self.fc2 = nn.Linear(int(input_size/2*input_size/2*self.cnn_chn[0]), latent_variable_size)
-
         # decoder
         self.d1 = nn.Linear(latent_variable_size, int(input_size/8*input_size/8*self.cnn_chn[2]))
-        # self.d1 = nn.Linear(latent_variable_size, int(input_size / 2 * input_size / 2 * self.cnn_chn[0]))
 
         self.up1 = nn.UpsamplingNearest2d(scale_factor=2) # 8 -> 16
         self.pd1 = nn.ReplicationPad2d(1)
@@ -153,27 +148,8 @@ class VAEIdsia(nn.Module):
         h3 = self.leakyrelu(self.bn3(self.e3(h2)))
         h4 = h3.view(-1, int(self.input_size / 8 * self.input_size / 8 * self.cnn_chn[2]))
 
+
         return self.fc1(h4), self.fc2(h4), x
-    #
-    # def encode(self, x):
-    #     if self.param1 is not None:
-    #         x = self.stn1(x)
-    #
-    #     h1 = self.leakyrelu(self.bn1(self.e1(x)))
-    #     # if self.param2 is not None:
-    #     #     h1 = self.stn2(h1)
-    #     #
-    #     # h2 = self.leakyrelu(self.bn2(self.e2(h1)))
-    #     # if self.param3 is not None:
-    #     #     h2 = self.stn3(h2)
-    #     #
-    #     # h3 = self.leakyrelu(self.bn3(self.e3(h2)))
-    #     h4 = h1.view(-1, int(self.input_size/2*self.input_size/2*self.cnn_chn[0]))
-    #
-    #     return self.fc1(h4), self.fc2(h4), x
-
-
-
 
     def reparametrize(self, mu, logvar):
         std = logvar.mul(0.5).exp_()
@@ -191,15 +167,6 @@ class VAEIdsia(nn.Module):
         h2 = self.leakyrelu(self.bn6(self.d2(self.pd1(self.up1(h1)))))
         h3 = self.leakyrelu(self.bn7(self.d3(self.pd2(self.up2(h2)))))
         return self.sigmoid(self.d4(self.pd3(self.up3(h3))))
-
-    # def decode(self, z):
-    #     h1 = self.relu(self.d1(z))
-    #     # h1 = h1.view(-1, self.ngf*8*2, 4, 4)
-    #     h1 = h1.view(-1, self.cnn_chn[0], int(self.input_size/2), int(self.input_size/2))
-    #     # h2 = self.up1(h1)# self.leakyrelu(self.bn6(self.d2(self.pd1(self.up1(h1)))))
-    #     # h3 = self.up2(h2) #self.leakyrelu(self.bn7(self.d3(self.pd2(self.up2(h2)))))
-    #     return self.sigmoid(self.d4(self.pd3(self.up3(h1))))
-
 
     def get_latent_var(self, x):
         mu, logvar = self.encode(x)

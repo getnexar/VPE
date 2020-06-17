@@ -29,11 +29,11 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 import torchvision
 from torchvision import datasets, transforms
-
+import models
 from loader import get_loader, get_data_path
 from models import get_model
 from augmentations import *
-
+from models.vaeIdsiaStnTF import create_encoder_model, CVAE, train_step, get_optimizer, compute_loss_tf
 
 USE_CUDA = True
 try:
@@ -44,25 +44,25 @@ except:
 
 # Setup
 parser = ArgumentParser(description='Variational Prototyping Encoder (VPE)')
-parser.add_argument('--seed',       type=int,   default=42,             help='Random seed')
-parser.add_argument('--arch',       type=str,   default='vaeIdsiaStn',  help='network type: vaeIdsia, vaeIdsiaStn')
-parser.add_argument('--dataset',    type=str,   default='gtsrb2TT100K', help='dataset to use [gtsrb, gtsrb2TT100K, belga2flickr, belga2toplogo]')
+parser.add_argument('--seed',       type=int,   default=43,             help='Random seed')
+parser.add_argument('--arch',       type=str,   default='vaeIdsia',  help='network type: vaeIdsia, vaeIdsiaStn')
+parser.add_argument('--dataset',    type=str,   default='belga2flickr', help='dataset to use [gtsrb, gtsrb2TT100K, belga2flickr, belga2toplogo]')
 parser.add_argument('--exp',        type=str,   default='exp_list',     help='training scenario')
 parser.add_argument('--resume',     type=str,   default=None,           help='Resume training from previously saved model')
 
 parser.add_argument('--epochs',     type=int,   default=2000,           help='Training epochs')
 parser.add_argument('--lr',         type=float, default=1e-4,           help='Learning rate')
-parser.add_argument('--batch_size', type=int,   default=128,            help='Batch size')
+parser.add_argument('--batch_size', type=int,   default=64,            help='Batch size')
 
 parser.add_argument('--img_cols',   type=int,   default=64,             help='resized image width')
 parser.add_argument('--img_rows',   type=int,   default=64,             help='resized image height')
-parser.add_argument('--workers',    type=int,   default=4,              help='Data loader workers')
+parser.add_argument('--workers',    type=int,   default=0,              help='Data loader workers')
 
 args = parser.parse_args()
 
 random.seed(args.seed)
 torch.manual_seed(args.seed)
-plt.switch_backend('agg')  # Allow plotting when running remotely
+# plt.switch_backend('agg')  # Allow plotting when running remotely
 
 save_epoch = 100 # save log images per save_epoch
 
@@ -136,38 +136,96 @@ num_test = len(te_loader.targets)
 batch_iter = math.ceil(num_train/args.batch_size)
 batch_iter_test = math.ceil(num_test/args.batch_size)
 
+
+tf_model = CVAE(latent_dim=300)
+tf_optimizer = get_optimizer()
+
 def train(e):
   n_classes = tr_loader.n_classes
   n_classes_te = te_loader.n_classes
 
   print('start train epoch: %d'%e)
   net.train()
+  # tf_encoder_model = models.vaeIdsiaStnTF.create_encoder_model()
 
   for i, (input, target, template) in enumerate(trainloader):
+    # break
+  # for i in range(6000):
+  # for i, (input, target, template) in enumerate(trainloader):
 
     optimizer.zero_grad()
     target = torch.squeeze(target)
+
     if USE_CUDA:
       input, template = input.cuda(non_blocking=True), template.cuda(non_blocking=True)
 
+
+
     recon, mu, logvar, input_stn = net(input)
+
+
+    # convert to tensorflow ordering:
+    if USE_CUDA:
+      data_for_tf = input.cpu().data.numpy().transpose((0, 2, 3, 1))
+      target_for_tf = template.cpu().data.numpy().transpose((0, 2, 3, 1))
+    else:
+      data_for_tf = input.data.numpy().transpose((0, 2, 3, 1))
+      target_for_tf =template.data.numpy().transpose((0, 2, 3, 1))
+    # mean, logvar = tf_model.encode(data_for_tf)
+    # res = tf_encoder_model(data_for_tf)
+
+    # mean, logvar = tf_model.encode(data_for_tf)
+    # z = tf_model.reparameterize(mean, logvar)
+    # predictions = tf_model.sample(z)
+    #
+    # for i in range(100):
+    #   train_step(model=tf_model,x=data_for_tf, target=target_for_tf,optimizer=tf_optimizer)
+    #
+    #   mean, logvar = tf_model.encode(data_for_tf)
+    #   z = tf_model.reparameterize(mean, logvar)
+    #   predictions = tf_model.sample(z)
+    # print('yo')
+
+
+    # print("res.shape", res.shape)
     loss = loss_function(recon, template, mu, logvar) # reconstruction loss
-    print('Epoch:%d  Batch:%d/%d  loss:%08f'%(e, i, batch_iter, loss.data/input.numel()))
+
+    # loss_tf = compute_loss_tf(recon_x=recon.data.numpy().transpose((0, 2, 3, 1)),
+    #                           x=template.data.numpy().transpose((0, 2, 3, 1)),
+    #                           mean=mu.data.numpy(),
+    #                           logvar=logvar.data.numpy())
+    loss_tf, x_logit = train_step(model=tf_model, x=data_for_tf, target=target_for_tf, optimizer=tf_optimizer)
+
+
+    if i % 100 == 0:
+      print('here')
+
+    # compute_loss_tf()
+
+    print(f'Epoch:{e}  Batch:{i}/{batch_iter}  loss:{loss.data/input.numel()} tf_loss:{loss_tf}')
+
    
     f_loss = open(os.path.join(result_path, "log_loss.txt"),'a')
     f_loss.write('Epoch:%d  Batch:%d/%d  loss:%08f\n'%(e, i, batch_iter, loss.data/input.numel()))
     f_loss.close()
 
+
+
+    # tf_model.save_weights(f'/Users/wrytl/save_model.h5')
     loss.backward()
     optimizer.step()
 
-    if i < 1 and (e%save_epoch == 0):
+    # if i < 1 and (e%save_epoch == 0):
+    if i % 10 == 0:
       out_folder =  "%s/Epoch_%d_train"%(outimg_path, e)
       out_root = Path(out_folder)
       if not out_root.is_dir():
         os.mkdir(out_root)
-
+      if i == 0:
+          tf_model.save_weights(os.path.join(out_folder,f'save_model.h5'))
+      tensor_recon_tf = torch.from_numpy(x_logit.numpy().transpose((0,3,1,2))).float()
       torchvision.utils.save_image(input.data, '{}/batch_{}_data.jpg'.format(out_folder,i), nrow=8, padding=2)
+      torchvision.utils.save_image(tensor_recon_tf.data, '{}/batch_{}_recon_tf.jpg'.format(out_folder, i), nrow=8, padding=2)
       torchvision.utils.save_image(input_stn.data, '{}/batch_{}_data_stn.jpg'.format(out_folder, i), nrow=8, padding=2) 
       torchvision.utils.save_image(recon.data, '{}/batch_{}_recon.jpg'.format(out_folder,i), nrow=8, padding=2)
       torchvision.utils.save_image(template.data, '{}/batch_{}_target.jpg'.format(out_folder,i), nrow=8, padding=2)
@@ -349,6 +407,7 @@ def test(e, best_acc):
   return best_acc
 
 if __name__ == "__main__":
+
   out_root = Path(outimg_path)
   if not out_root.is_dir():
     os.mkdir(out_root)

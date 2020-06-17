@@ -45,7 +45,7 @@ except:
 # Setup
 parser = ArgumentParser(description='Variational Prototyping Encoder (VPE)')
 parser.add_argument('--seed',       type=int,   default=42,             help='Random seed')
-parser.add_argument('--arch',       type=str,   default='vaeIdsiaStn',  help='network type: vaeIdsia, vaeIdsiaStn')
+parser.add_argument('--arch',       type=str,   default='vaeIdsia',  help='network type: vaeIdsia, vaeIdsiaStn')
 parser.add_argument('--dataset',    type=str,   default='gtsrb2TT100K', help='dataset to use [gtsrb, gtsrb2TT100K, belga2flickr, belga2toplogo]')
 parser.add_argument('--exp',        type=str,   default='exp_list',     help='training scenario')
 parser.add_argument('--resume',     type=str,   default=None,           help='Resume training from previously saved model')
@@ -300,7 +300,7 @@ def test(e, best_acc):
 
     f_iou_class = open(os.path.join(result_path, "best_iou.txt"),'w')
     f_rank = open(os.path.join(result_path, "best_rank.txt"),'w')
-    torch.save(net.state_dict(), os.path.join('%s_testBest_net.pth'%args.dataset))
+    torch.save(net.state_dict(), os.path.join('%s_no_stn_testBest_net.pth'%args.dataset))
 
     best_acc = acc_tecls.mean()
     f_iou_class.write('Best score epoch:  %d\n'%e)
