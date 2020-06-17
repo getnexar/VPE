@@ -38,7 +38,7 @@ from models.vaeIdsiaStnTF import create_encoder_model, CVAE, train_step, get_opt
 USE_CUDA = True
 try:
     torch.cuda.current_device()
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 except:
     USE_CUDA = False
 
